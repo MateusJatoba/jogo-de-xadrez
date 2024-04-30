@@ -20,16 +20,14 @@ public class Casa {
 	//getters e setters
 	
 	
-	public String getPeca() {
-		return peca.getTipo();
+	public Pecas getPeca() {
+		return peca;
 	}
 
 	public void setPeca(Pecas peca) {
 		this.peca = peca;
 	}
 
-	
-	
 	public int getCoordenadaLinha() {
 		return coordenadaLinha;
 	}
