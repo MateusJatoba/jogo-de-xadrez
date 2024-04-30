@@ -1,5 +1,8 @@
 package classes_pecas;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Pecas {
 	
 	//Atributos de Peça
@@ -25,7 +28,10 @@ public class Pecas {
 		this.id = id;
 	}
 	
-	
+	// Método para calcular as possibilidades de movimento da peça a partir de sua posição atual
+    public List<int[]> calcularPossibilidades(int coluna, int linha) {
+        return new ArrayList<>(); // Por padrão, retornamos uma lista vazia
+    }
 	
 	//Getters e Setters
 	public int getId() {

@@ -48,15 +48,19 @@ public class teste {
 		
 		//inicializando e imprimndo o tabuleiro
 		tabuleiro.inicializaTabuleiro();
+		
+		tabuleiro.preencherTabuleiro(jogadores);
+		
 		tabuleiro.imprimirTabuleiro();
         
-     
-		
         sc.nextLine();
-		
         
-       
         
+        
+        for(int i = 0; i < 3; i++) {
+		tabuleiro.Jogar();
+        }
+        sc.close();
 	}
 	
 	
@@ -81,8 +85,4 @@ public class teste {
 
 	}
 	
-	
-	
-
-
 }
