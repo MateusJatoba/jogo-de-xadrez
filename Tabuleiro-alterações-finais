@@ -5,6 +5,7 @@ import funcoes_auxiliares.sleep;
 
 //Classe tabuleiro
 
+	
 public class Tabuleiro{
 	
 	//Atributo adicional
@@ -136,7 +137,7 @@ public class Tabuleiro{
 		                        for (int[] posicao : possibilidades) {
 		                            int linhaPossibilidade = posicao[0];
 		                            int colunaPossibilidade = posicao[1];
-		                            if (matriz[linhaPossibilidade][colunaPossibilidade].getStatusoocupados() == 0) { // verifica se a casa está livre
+		                            if (matriz[linhaPossibilidade][colunaPossibilidade].getStatusoocupados() == 0) { 
 		                                System.out.println(index + ". Linha: " + (linhaPossibilidade + 1) + ", Coluna: " + converterParaLetra(colunaPossibilidade));
 		                                index++;
 		                            }
@@ -155,7 +156,7 @@ public class Tabuleiro{
 		                                sleep.sleep_func(3000);
 		                          
 		                                imprimirTabuleiro();
-		                                System.out.println("Status da casa: " + matriz[1][1].getStatusoocupados()); // Função usada corretamente
+		                                System.out.println("Status da casa: " + matriz[1][1].getStatusoocupados()); 
 		                            } else {
 		                                System.out.println("Escolha inválida. Por favor, escolha um número entre 1 e " + (index - 1) + ".");
 		                            }
@@ -173,7 +174,26 @@ public class Tabuleiro{
 		            }
 		        }
 	        	casaValida = false;
+	        	
+	        	/*VERIFICA SE HOUVE XEQUE MATE*/
+	        	 if (xequeMate(jogadores, jogadores[i])) {
+	                 System.out.println("\n------------------------ FIM DE JOGO ------------------------\n");
+	                 System.out.println("Xeque-mate! O jogador " + jogadores[i].getNome() + " venceu!");
+	                 break;
+	                 return; 
+	             }else {
+	            	 /*adicionar condições de empate*/
+	             }
+	        	 /////////////////////////////////////////////////
+	        	 
 	        }  
+	        
+	        
+	        /*VERIFICA SE GANHOU*/
+	        
+	        
+	        
+	        
 	        
 	        System.out.println("-------------------------------------------------------");
             System.out.println("RODADA ENCERRADA!!");
@@ -181,6 +201,112 @@ public class Tabuleiro{
             sleep.sleep_func(3000);
 	    }
 	    
+	    
+	    
+	    ////////////////////////////////////////////////
+	    
+	    
+	    public boolean estaSobAtaque(int linha, int coluna, Jogador[] jogadores) {
+	        for (Jogador jogador : jogadores) {
+	            Pecas[] pecasJogador = jogador.getLista();
+	            for (Pecas peca : pecasJogador) {
+	                List<int[]> possibilidades = peca.calcularPossibilidades(coluna, linha);
+	                for (int[] posicao : possibilidades) {
+	                    int linhaPossibilidade = posicao[0];
+	                    int colunaPossibilidade = posicao[1];
+	                    if (linhaPossibilidade == linha && colunaPossibilidade == coluna) {
+	                        return true;
+	                    }
+	                }
+	            }
+	        }
+	        return false;
+	    }
+	    
+	    
+	    ////////////////////// METODOS DO XEQUE MATE //////////////////////////////////////////////////
+	    
+	    public boolean isPeca(int linha, int coluna) {
+	        return matriz[linha][coluna].getStatusoocupados() == 1;
+	    }
+
+	    private boolean xequeMate(Jogador[] jogadores, Jogador jogadorAtual) {
+	        
+	    	// procurar o rei p verificar se ha movimentaçoes disponiveis 
+	    	Pecas rei = null;
+	        for (Pecas peca : jogadorAtual.getLista()) {
+	            if (peca.getTipo().equals("Rei")) {
+	                rei = peca;
+	                break;
+	            }
+	        }
+
+	        Casa casaRei = encontrarCasaRei(jogadores, rei);
+	        if (casaRei == null) {
+	            return false; 
+	        }
+
+	        int linhaRei = casaRei.getCoordenadaLinha();
+	        int colunaRei = casaRei.getCoordenadaColuna();
+	        if (!estaSobAtaque(linhaRei, colunaRei, jogadores)) {
+	            return false; 
+	        }
+
+	        //verifica se ha possibilidade de movimento
+	        List<int[]> possibilidades = rei.calcularPossibilidades(colunaRei, linhaRei);
+	        if (possibilidades.isEmpty()) {
+	            return true;
+	        }
+
+	      
+	        for (Jogador adversario : jogadores) {
+	            if (adversario != jogadorAtual) {
+	                for (Pecas peca : adversario.getLista()) {
+	                    List<int[]> possibilidadesBloqueio = peca.calcularPossibilidades(colunaRei, linhaRei);
+	                    for (int[] posicao : possibilidadesBloqueio) {
+	                        int novaLinha = posicao[0];
+	                        int novaColuna = posicao[1];
+	                        if (!isPeca(novaLinha, novaColuna)) {
+	                            
+	                            Pecas pecaNaCasa = matriz[novaLinha][novaColuna].getPeca();
+	                            matriz[novaLinha][novaColuna].setPeca(peca);
+	                            matriz[linhaRei][colunaRei].setPeca(null);
+
+	                            if (!estaSobAtaque(linhaRei, colunaRei, jogadores)) {
+	                                
+	                                matriz[linhaRei][colunaRei].setPeca(rei);
+	                                matriz[novaLinha][novaColuna].setPeca(pecaNaCasa);
+	                                return false;
+	                            }
+
+	                           
+	                            matriz[linhaRei][colunaRei].setPeca(rei);
+	                            matriz[novaLinha][novaColuna].setPeca(pecaNaCasa);
+	                        }
+	                    }
+	                }
+	            }
+	        }
+
+	        return true; 
+	    }
+
+	    private Casa encontrarCasaRei(Jogador[] jogadores, Pecas rei) {
+	        for (Jogador jogador : jogadores) {
+	            for (Pecas peca : jogador.getLista()) {
+	                if (peca.equals(rei)) {
+	                    int linha = peca.getPosicaoLinha();
+	                    int coluna = peca.getPosicaoColuna();
+	                    return matriz[linha][coluna];
+	                }
+	            }
+	        }
+	        return null;
+	    }
+
+	    
+	    
+	    ///////////////////////////////////////////////
 	    
 
 	    private String converterParaLetra(int coluna) {
@@ -196,5 +322,7 @@ public class Tabuleiro{
 	        casaOrigem.setStatusoocupados(0);
 	        casaDestino.setStatusoocupados(1);
 	    }
+        
+
         
 	}
