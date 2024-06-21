@@ -6,7 +6,7 @@ import funcoes_auxiliares.sleep;
 //Classe tabuleiro
 
 	
-public class Tabuleiro{
+public class Tabuleiro implements Arquivo{
 	
 	//Atributo adicional
 	 private Casa[][] matriz;
@@ -180,18 +180,13 @@ public class Tabuleiro{
 	                 System.out.println("\n------------------------ FIM DE JOGO ------------------------\n");
 	                 System.out.println("Xeque-mate! O jogador " + jogadores[i].getNome() + " venceu!");
 	                 break;
-	                 return; 
+	                
 	             }else {
 	            	 /*adicionar condições de empate*/
 	             }
 	        	 /////////////////////////////////////////////////
 	        	 
 	        }  
-	        
-	        
-	        /*VERIFICA SE GANHOU*/
-	        
-	        
 	        
 	        
 	        
@@ -322,7 +317,5 @@ public class Tabuleiro{
 	        casaOrigem.setStatusoocupados(0);
 	        casaDestino.setStatusoocupados(1);
 	    }
-        
-
         
 	}
