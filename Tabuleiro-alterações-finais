@@ -1,6 +1,8 @@
-package entidades;
+package classes_pecas;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import funcoes_auxiliares.Arquivo;
 import funcoes_auxiliares.sleep;
 
 //Classe tabuleiro
@@ -12,6 +14,8 @@ public class Tabuleiro implements Arquivo{
 	 private Casa[][] matriz;
 	 private static int Q=0;
 	 protected sleep sleep;
+	 private int contadorMovimentosSemCaptura;
+	 private List<String> historicoPosicoes;
 
 	    // Variáveis para mudar a cor do background
 	    final String ANSI_BLACK_BACKGROUND = "\u001B[40m"; 
@@ -23,6 +27,8 @@ public class Tabuleiro implements Arquivo{
 	    // Construtor criando os 64 espaços
 	    public Tabuleiro() {
 	        this.matriz = new Casa[8][8];
+	        this.historicoPosicoes = new ArrayList<>();
+	        this.contadorMovimentosSemCaptura = 0;
 	    }
 
 	    // Inicializando o tabuleiro e setando as coordenadas
@@ -182,7 +188,11 @@ public class Tabuleiro implements Arquivo{
 	                 break;
 	                
 	             }else {
-	            	 /*adicionar condições de empate*/
+	            	 if (verificarEmpate(jogadores, jogadores[i])) {
+	                     System.out.println("\n------------------------ FIM DE JOGO ------------------------\n");
+	                     System.out.println("O jogo terminou em empate!");
+	                     break;
+	                 }
 	             }
 	        	 /////////////////////////////////////////////////
 	        	 
@@ -285,6 +295,115 @@ public class Tabuleiro implements Arquivo{
 
 	        return true; 
 	    }
+	    
+	    public boolean verificarEmpate(Jogador[] jogadores, Jogador jogadorAtual) {
+	        // Verificar empate por afogamento
+	        if (afogamento(jogadorAtual)) {
+	            return true;
+	        }
+
+	        // Verificar empate por insuficiência de material
+	        if (insuficienciaDeMaterial(jogadores)) {
+	            return true;
+	        }
+
+	        // Verificar empate por regra dos 50 movimentos (essa lógica precisa ser implementada com contadores de movimentos)
+	        if (regraDos50Movimentos()) {
+	            return true;
+	        }
+
+	        // Verificar empate por repetição de posição (essa lógica precisa ser implementada com histórico de posições)
+	        if (repeticaoDePosicao()) {
+	            return true;
+	        }
+
+	        // Verificar se o jogador atual não tem mais movimentos possíveis
+	        if (semMovimentosPossiveis(jogadorAtual, jogadores)) {
+	            return true;
+	        }
+
+	        return false;
+	    }
+
+	    public boolean afogamento(Jogador jogador) {
+	        for (Pecas peca : jogador.getLista()) {
+	            if (peca != null && peca.getTipo().equals("Rei")) {
+	                int linhaRei = peca.getPosicaoLinha();
+	                int colunaRei = peca.getPosicaoColuna();
+	                List<int[]> possibilidades = peca.calcularPossibilidades(colunaRei, linhaRei);
+
+	                for (int[] posicao : possibilidades) {
+	                    int novaLinha = posicao[0];
+	                    int novaColuna = posicao[1];
+	                    if (matriz[novaLinha][novaColuna].getStatusoocupados() == 0) {
+	                        return false;
+	                    }
+	                }
+	                break;
+	            }
+	        }
+	        return true;
+	    }
+
+	    public boolean insuficienciaDeMaterial(Jogador[] jogadores) {
+	        for (Jogador jogador : jogadores) {
+	            Pecas[] pecasJogador = jogador.getLista();
+	            boolean temPeca = false;
+
+	            for (Pecas peca : pecasJogador) {
+	                if (peca != null && !peca.getTipo().equals("Rei")) {
+	                    temPeca = true;
+	                    break;
+	                }
+	            }
+
+	            if (!temPeca) {
+	                return true;
+	            }
+	        }
+	        return false;
+	    }
+
+	    public boolean regraDos50Movimentos() {
+	        return contadorMovimentosSemCaptura >= 50;
+	    }
+
+	    public boolean repeticaoDePosicao() {
+	        String estadoAtual = salvarEstadoAtual();
+	        int repeticoes = 0;
+	        for (String estado : historicoPosicoes) {
+	            if (estado.equals(estadoAtual)) {
+	                repeticoes++;
+	            }
+	        }
+	        return repeticoes >= 3;
+	    }
+
+	    private boolean semMovimentosPossiveis(Jogador jogadorAtual, Jogador[] jogadores) {
+	        boolean movimentoFeito = false;
+
+	        for (Pecas peca : jogadorAtual.getLista()) {
+	            int linhaOrigem = peca.getPosicaoLinha();
+	            int colunaOrigem = peca.getPosicaoColuna();
+	            List<int[]> possibilidades = peca.calcularPossibilidades(colunaOrigem, linhaOrigem);
+
+	            for (int[] posicao : possibilidades) {
+	                int novaLinha = posicao[0];
+	                int novaColuna = posicao[1];
+	                if (!isPeca(novaLinha, novaColuna)) {
+	                    // Se houver ao menos uma possibilidade de movimento, não é um empate por falta de movimentos
+	                    movimentoFeito = true;
+	                    break;
+	                }
+	            }
+
+	            if (movimentoFeito) {
+	                break; // Se já encontramos um movimento possível, não precisamos verificar mais peças
+	            }
+	        }
+
+	        return !movimentoFeito; // Se nenhum movimento é possível para nenhuma peça do jogador atual, é um empate
+	    }
 
 	    private Casa encontrarCasaRei(Jogador[] jogadores, Pecas rei) {
 	        for (Jogador jogador : jogadores) {
@@ -299,7 +418,37 @@ public class Tabuleiro implements Arquivo{
 	        return null;
 	    }
 
+	    public void moverPecaComContagemEHistorico(int linhaOrigem, int colunaOrigem, int linhaDestino, int colunaDestino) {
+	        Casa casaDestino = matriz[linhaDestino][colunaDestino];
+	        boolean captura = casaDestino.getStatusoocupados() == 1;
+
+	        moverPeca(linhaOrigem, colunaOrigem, linhaDestino, colunaDestino);
+
+	        if (!captura) {
+	            contadorMovimentosSemCaptura++;
+	        } else {
+	            contadorMovimentosSemCaptura = 0;
+	        }
+
+	        salvarEstadoAtual();
+	    }
 	    
+	    private String salvarEstadoAtual() {
+	        StringBuilder estadoAtual = new StringBuilder();
+	        for (int i = 0; i < 8; i++) {
+	            for (int j = 0; j < 8; j++) {
+	                Pecas peca = matriz[i][j].getPeca();
+	                if (peca != null) {
+	                    estadoAtual.append(peca.getTipo().charAt(0));
+	                } else {
+	                    estadoAtual.append(" ");
+	                }
+	            }
+	            estadoAtual.append("\n");
+	        }
+	        historicoPosicoes.add(estadoAtual.toString()); // Adicionar o estado atual ao histórico de posições
+	        return estadoAtual.toString(); // Retornar o estado atual como uma string
+	    }
 	    
 	    ///////////////////////////////////////////////
 	    
